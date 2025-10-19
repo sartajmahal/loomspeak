@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@forge/api": "^3.0.0",
-    "@forge/resolver": "^3.0.0"
+    "@forge/resolver": "^1.7.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

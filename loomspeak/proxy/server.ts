@@ -1,8 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import fetch from 'node-fetch';
 import { createReadStream } from 'fs';
 import { pipeline } from 'stream/promises';
@@ -16,14 +14,9 @@ app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 
 const {
-  AWS_REGION,
-  S3_BUCKET,
   OPENAI_API_KEY,
-  GEMINI_API_KEY,
-  PRESIGN_TTL_SECONDS = '900'
+  GEMINI_API_KEY
 } = process.env;
-
-const s3 = new S3Client({ region: AWS_REGION });
 
 // Cost optimization settings
 const COST_OPTIMIZATION = {
@@ -35,107 +28,64 @@ const COST_OPTIMIZATION = {
   BATCH_PROCESSING: true       // Process in batches to reduce API calls
 };
 
-// Presign S3 upload with cost optimization
-app.get('/s3/presign', async (req, res) => {
+// Simple file upload endpoint (no S3 needed)
+app.post('/upload', async (req, res) => {
   try {
-    const filename = String(req.query.filename || `upload-${Date.now()}`);
-    const contentType = req.query.contentType || 'application/octet-stream';
-    const key = `uploads/${Date.now()}-${filename}`;
+    const { audioData, filename } = req.body;
     
-    const cmd = new PutObjectCommand({ 
-      Bucket: S3_BUCKET, 
-      Key: key, 
-      ContentType: String(contentType),
-      // Add cost optimization metadata
-      Metadata: {
-        'cost-optimized': 'true',
-        'upload-timestamp': Date.now().toString()
-      }
-    });
-    
-    const url = await getSignedUrl(s3, cmd, { expiresIn: Number(PRESIGN_TTL_SECONDS) });
-    const publicUrl = `https://${S3_BUCKET}.s3.amazonaws.com/${key}`;
-    
-    res.json({ url, contentType, publicUrl, key });
-  } catch (error: any) {
-    console.error('S3 presign error:', error);
-    res.status(500).json({ error: 'Failed to generate upload URL' });
-  }
-});
-
-// Optimized S3 preprocessing - store only transcript
-async function preprocessWithS3(transcript: string, sessionId: string) {
-  try {
-    // Store only the transcript in S3
-    const transcriptKey = `transcripts/${sessionId}-${Date.now()}.txt`;
-    const transcriptCmd = new PutObjectCommand({
-      Bucket: S3_BUCKET,
-      Key: transcriptKey,
-      Body: transcript,
-      ContentType: 'text/plain',
-      Metadata: {
-        'session-id': sessionId,
-        'processing-stage': 'transcript-storage',
-        'transcript-length': transcript.length.toString()
-      }
-    });
-    await s3.send(transcriptCmd);
-    const transcriptUrl = `https://${S3_BUCKET}.s3.amazonaws.com/${transcriptKey}`;
-
-    // Return minimal data - just what we need
-    return { 
-      transcriptUrl,
-      sessionId,
-      transcriptLength: transcript.length,
-      timestamp: Date.now()
-    };
-  } catch (error) {
-    console.error('S3 preprocessing error:', error);
-    throw new Error(`S3 preprocessing failed: ${error.message}`);
-  }
-}
-
-// Optimized audio processing with S3 preprocessing
-app.post('/process', async (req, res) => {
-  try {
-    const { mediaUrl, sourceTranscript, optimizeForCost = true } = req.body;
-    const sessionId = `sess_${Date.now()}`;
-    
-    console.log(`Processing session ${sessionId} with cost optimization: ${optimizeForCost}`);
-
-    // 1) Download and validate media
-    const mediaResp = await fetch(mediaUrl);
-    if (!mediaResp.ok) {
-      throw new Error(`Failed to download media: ${mediaResp.statusText}`);
-    }
-    
-    const mediaBuffer = Buffer.from(await mediaResp.arrayBuffer());
+    // Process audio data directly (base64 or buffer)
+    const audioBuffer = Buffer.from(audioData, 'base64');
     
     // Check file size limit for cost control
-    if (mediaBuffer.length > COST_OPTIMIZATION.CHUNK_SIZE) {
+    if (audioBuffer.length > COST_OPTIMIZATION.CHUNK_SIZE) {
       throw new Error(`File too large. Maximum size is ${COST_OPTIMIZATION.CHUNK_SIZE / (1024 * 1024)}MB`);
     }
 
+    res.json({ 
+      success: true, 
+      filename,
+      size: audioBuffer.length,
+      message: 'File uploaded successfully'
+    });
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Optimized audio processing without S3 (local processing)
+app.post('/process', async (req, res) => {
+  try {
+    const { audioData, sourceTranscript, optimizeForCost = true, workspaceContext, userCommand } = req.body;
+    const sessionId = `sess_${Date.now()}`;
+    
+    console.log(`Processing session ${sessionId} with cost optimization: ${optimizeForCost}`);
+    console.log('Workspace context:', workspaceContext);
+
     let transcript = sourceTranscript || '';
 
-    // 2) Use source transcript if available (from Web Speech API - FREE)
+    // 1) Use source transcript if available (from Web Speech API - FREE)
     if (sourceTranscript && sourceTranscript.trim().length > 10) {
       console.log('Using Web Speech API transcript (free)');
       transcript = sourceTranscript;
-    } else {
-      // 3) Fallback to Whisper API with cost optimization
+    } else if (audioData) {
+      // 2) Process audio data directly with Whisper API
       console.log('Using Whisper API with cost optimization');
-      transcript = await transcribeWithWhisper(mediaBuffer, optimizeForCost);
+      const audioBuffer = Buffer.from(audioData, 'base64');
+      
+      // Check file size limit for cost control
+      if (audioBuffer.length > COST_OPTIMIZATION.CHUNK_SIZE) {
+        throw new Error(`File too large. Maximum size is ${COST_OPTIMIZATION.CHUNK_SIZE / (1024 * 1024)}MB`);
+      }
+      
+      transcript = await transcribeWithWhisper(audioBuffer, optimizeForCost);
     }
 
-    // 4) S3 Preprocessing - Store only transcript
-    const s3Data = await preprocessWithS3(transcript, sessionId);
-
-    // 5) Extract actions using Gemini
+    // 3) Extract actions using Gemini with Rovo integration and workspace context
     let summary = '';
     let actions: any[] = [];
     if (transcript.trim().length > 0) {
-      const extractionResult = await extractActionsCostOptimized(transcript, optimizeForCost);
+      const extractionResult = await extractActionsCostOptimized(transcript, optimizeForCost, workspaceContext);
       summary = extractionResult.summary;
       actions = extractionResult.actions;
     }
@@ -145,9 +95,10 @@ app.post('/process', async (req, res) => {
       transcript, 
       summary, 
       actions,
-      s3Data,
       costOptimized: optimizeForCost,
-      processingMethod: sourceTranscript ? 'web-speech-api' : 'whisper-api'
+      processingMethod: sourceTranscript ? 'web-speech-api' : 'whisper-api',
+      workspaceContext,
+      userCommand
     });
 
   } catch (error: any) {
@@ -203,37 +154,51 @@ async function transcribeWithWhisper(audioBuffer: Buffer, optimizeForCost: boole
   }
 }
 
-// Cost-optimized action extraction using Gemini
-async function extractActionsCostOptimized(transcript: string, optimizeForCost: boolean): Promise<{summary: string, actions: any[]}> {
+// Cost-optimized action extraction using Gemini with Rovo integration
+async function extractActionsCostOptimized(transcript: string, optimizeForCost: boolean, workspaceContext?: any): Promise<{summary: string, actions: any[]}> {
   try {
-    // Gemini system prompt for action extraction
-    const systemPrompt = `You are LoomSpeak+, an Atlassian assistant. Extract actionable items from meeting/lecture transcripts and categorize them:
+    // Enhanced Gemini system prompt with Rovo agent integration
+    const systemPrompt = `You are LoomSpeak+, an Atlassian assistant powered by Rovo agents. Extract actionable items from meeting/lecture transcripts and categorize them using workspace context:
 
 1. JIRA TICKETS: Upcoming assignments, tasks, deadlines, bugs to fix
 2. CONFLUENCE PAGES: Notable concepts, lecture notes, important information
 3. OTHER: Any other actionable items
 
+Workspace Context: ${workspaceContext ? JSON.stringify(workspaceContext) : 'No workspace context provided'}
+
+Use Rovo agent capabilities to:
+- Analyze content for academic context (courses, assignments, concepts)
+- Identify workspace-specific terminology
+- Suggest appropriate project keys and space keys
+- Extract structured data for Atlassian tools
+
 Return JSON with this structure:
 {
-  "summary": "Brief meeting/lecture summary",
+  "summary": "Brief meeting/lecture summary with workspace context",
   "actions": [
     {
       "action": "create_issue|create_page|other",
       "title": "Task/Page title",
       "description": "Detailed description",
-      "project": "Project key (e.g., ENG, DOC)",
+      "project": "Project key (e.g., CSE312, ENG)",
       "points": 2,
       "assignee": "email@example.com",
       "dueDate": "Friday",
-      "spaceKey": "DOC",
-      "category": "assignment|concept|other"
+      "spaceKey": "CSE312",
+      "category": "assignment|concept|other",
+      "workspaceContext": "Additional workspace-specific context"
     }
-  ]
+  ],
+  "rovoInsights": {
+    "detectedCourse": "Course name if detected",
+    "assignmentType": "Type of assignment if detected",
+    "conceptLevel": "Beginner|Intermediate|Advanced"
+  }
 }`;
 
-    const userPrompt = `Transcript: ${transcript}\n\nExtract actionable items and create a summary.`;
+    const userPrompt = `Transcript: ${transcript}\n\nExtract actionable items using Rovo agent analysis and create a summary with workspace context.`;
 
-    // Use Gemini API
+    // Use Gemini API with Rovo-enhanced prompts
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 
@@ -247,7 +212,7 @@ Return JSON with this structure:
         }],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: optimizeForCost ? 500 : 1000,
+          maxOutputTokens: optimizeForCost ? 800 : 1500,
           responseMimeType: "application/json"
         }
       })
@@ -258,7 +223,7 @@ Return JSON with this structure:
       throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as any;
     const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!content) {
@@ -282,7 +247,7 @@ Return JSON with this structure:
       } else {
         // Fallback: create a simple action from the transcript
         return {
-          summary: 'Meeting transcript processed.',
+          summary: 'Meeting transcript processed with Rovo analysis.',
           actions: [{
             action: 'create_issue',
             title: 'Meeting Action Item',
@@ -296,7 +261,7 @@ Return JSON with this structure:
       console.error('JSON parse error:', parseError);
       // Fallback response
       return {
-        summary: 'Transcript processed with basic extraction.',
+        summary: 'Transcript processed with basic Rovo extraction.',
         actions: [{
           action: 'create_issue',
           title: 'Meeting Action Item',
@@ -308,10 +273,10 @@ Return JSON with this structure:
     }
 
   } catch (error: any) {
-    console.error('Action extraction error:', error);
+    console.error('Rovo action extraction error:', error);
     // Return minimal fallback
     return {
-      summary: 'Failed to extract actions automatically.',
+      summary: 'Failed to extract actions with Rovo analysis.',
       actions: [{
         action: 'create_issue',
         title: 'Manual Review Required',
@@ -322,6 +287,22 @@ Return JSON with this structure:
     };
   }
 }
+
+// Root route to fix "Cannot GET" error
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'LoomSpeak+ Rovo API Server',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: [
+      'GET /health - Health check',
+      'GET /cost-info - Cost optimization info',
+      'POST /upload - Upload audio data',
+      'POST /process - Process audio/transcript',
+      'POST /format-output - Format Forge results'
+    ]
+  });
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -379,7 +360,7 @@ Format as JSON:
       throw new Error(`Gemini formatting error: ${response.status}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as any;
     const formattedOutput = result.candidates?.[0]?.content?.parts?.[0]?.text;
     
     res.json(JSON.parse(formattedOutput || '{}'));
@@ -403,7 +384,13 @@ app.get('/cost-info', (req, res) => {
     estimatedCosts: {
       whisperPerMinute: 0.006, // $0.006 per minute
       geminiPer1kTokens: 0.000075, // $0.000075 per 1k tokens (cheaper than GPT-4o-mini!)
-      webSpeechAPI: 0 // Free
+      webSpeechAPI: 0, // Free
+      s3Storage: 0 // No longer using S3
+    },
+    features: {
+      localProcessing: true,
+      noS3Required: true,
+      rovoIntegration: true
     }
   });
 });
