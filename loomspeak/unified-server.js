@@ -138,6 +138,12 @@ app.get('/app', (req, res) => {
 // Serve static files from mic-to-text src folder for the app route
 app.use('/app', express.static(path.join(__dirname, 'mic-to-text/src')));
 
+// Serve Model Output static files and friendly route
+app.use('/model-output', express.static(path.join(__dirname, 'model-output')));
+app.get('/model-output', (req, res) => {
+  res.sendFile(path.join(__dirname, 'model-output/index.html'));
+});
+
 // Serve specific static files from root for the app
 app.get('/script.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'mic-to-text/src/script.js'));

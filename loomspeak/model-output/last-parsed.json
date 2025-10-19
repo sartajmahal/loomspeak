@@ -1,30 +1,66 @@
 {
-  "input": "6700.6700 or 6 7 6 7 into a confluence page please",
+  "input": "It's been a long day bro, TSPMO. So first, I just learned I gotta reschedule my meeting with Yonda and Sid, move it from Tuesday to Thursday from 6 to 7. Also bro, this Sartaj guy, we beefing now. So gotta delete that document with all our favorite memories, but keep the feat pics in it and move that into a new page. Actually no, update the page I have of secret photos and put the feat pics in there. And then, yeah.",
   "actions": [
     {
-      "action": "create_page",
-      "title": "New Page with Provided Content",
-      "target": "confluence",
+      "action": "update_issue",
+      "title": "Reschedule meeting with Yonda and Sid",
+      "target": "jira",
       "data": {
-        "body": "6700.6700 or 6 7 6 7"
+        "dueDate": "Thursday from 6 to 7"
+      }
+    },
+    {
+      "action": "delete_page",
+      "target": "confluence",
+      "identifier": {
+        "pageTitle": "Favorite memories with Sartaj"
+      }
+    },
+    {
+      "action": "update_page",
+      "title": "Add feat pics to secret photos page",
+      "target": "confluence",
+      "identifier": {
+        "pageTitle": "Secret photos"
+      },
+      "data": {
+        "body": "Add feat pics"
       }
     }
   ],
   "raw": {
     "actions": [
       {
-        "action": "create_page",
-        "title": "New Page with Provided Content",
-        "target": "confluence",
+        "action": "update_issue",
+        "target": "jira",
+        "title": "Reschedule meeting with Yonda and Sid",
         "data": {
-          "body": "6700.6700 or 6 7 6 7"
+          "dueDate": "Thursday from 6 to 7"
+        }
+      },
+      {
+        "action": "delete_page",
+        "target": "confluence",
+        "identifier": {
+          "pageTitle": "Favorite memories with Sartaj"
+        }
+      },
+      {
+        "action": "update_page",
+        "target": "confluence",
+        "title": "Add feat pics to secret photos page",
+        "identifier": {
+          "pageTitle": "Secret photos"
+        },
+        "data": {
+          "body": "Add feat pics"
         }
       }
     ]
   },
   "metadata": {
-    "inputLength": 50,
-    "actionsFound": 1,
-    "timestamp": "2025-10-19T18:29:22.475Z"
+    "inputLength": 419,
+    "actionsFound": 3,
+    "timestamp": "2025-10-19T20:17:54.856Z"
   }
 }
