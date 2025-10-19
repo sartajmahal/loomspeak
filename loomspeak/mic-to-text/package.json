@@ -1,0 +1,19 @@
+{
+  "name": "mic-to-mp3-transcriber",
+  "version": "1.0.0",
+  "description": "Microphone to MP3 recorder with automatic transcription",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^6.5.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

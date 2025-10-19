@@ -1,24 +1,24 @@
-# 🔑 Credentials Needed for LoomSpeak+ Rovo Integration
+# 🔑 Credentials Needed for LoomSpeak+ Deployment
 
 ## Required Credentials
 
 ### 1. OpenAI API Key (Whisper only)
 - **Where to get**: https://platform.openai.com/api-keys
-- **Cost**: ~$0.006/minute (very affordable)
+- **Cost**: ~$3-6/month for Whisper usage
 - **Format**: `sk-...` (starts with sk-)
-- **Usage**: Speech-to-text with Whisper API (fallback only)
+- **Usage**: Speech-to-text with Whisper API
 
 ### 2. Google Gemini API Key
 - **Where to get**: https://makersuite.google.com/app/apikey
-- **Cost**: ~$0.000075 per 1k tokens (cheaper than GPT-4o-mini!)
+- **Cost**: ~$2-4/month for action extraction
 - **Format**: `AIza...` (starts with AIza)
-- **Usage**: Rovo-powered action extraction and workspace analysis
+- **Usage**: Action extraction and output formatting
 
 ### 3. AWS S3 Bucket
 - **Where to get**: https://console.aws.amazon.com/s3/
-- **Cost**: ~$0.023 per GB/month (minimal usage)
+- **Cost**: ~$1/month for storage
 - **Format**: `loomspeak-media-yourname` (must be globally unique)
-- **Usage**: Store transcripts and workspace context
+- **Usage**: Store uploaded audio files
 
 ### 4. AWS IAM Credentials (for EC2)
 - **Where to get**: https://console.aws.amazon.com/iam/
@@ -26,16 +26,16 @@
 - **Format**: Access Key ID + Secret Access Key
 - **Usage**: Access S3 from EC2 instance
 
-### 5. Atlassian API Token (For Forge CLI)
+### 5. EC2 Instance
+- **Where to get**: https://console.aws.amazon.com/ec2/
+- **Cost**: ~$8/month (t3.micro)
+- **Usage**: Host the proxy server
+
+### 6. Atlassian API Token (For Forge CLI)
 - **Where to get**: https://id.atlassian.com/manage/api-tokens
 - **Cost**: Free
 - **Format**: API token string
 - **Usage**: Login to Forge CLI for deployment
-
-### 6. EC2 Instance (Optional)
-- **Where to get**: https://console.aws.amazon.com/ec2/
-- **Cost**: ~$5-10/month (t3.micro)
-- **Usage**: Host the proxy server
 
 ### 7. Domain Name (Optional)
 - **Where to get**: Any domain registrar
@@ -68,7 +68,6 @@
    ```bash
    # Replace these:
    OPENAI_API_KEY=REPLACE_WITH_YOUR_OPENAI_KEY
-   GEMINI_API_KEY=REPLACE_WITH_YOUR_GEMINI_KEY
    S3_BUCKET=REPLACE_WITH_YOUR_S3_BUCKET
    AWS_ACCESS_KEY_ID=your-access-key
    AWS_SECRET_ACCESS_KEY=your-secret-key
@@ -107,21 +106,19 @@ nano proxy/.env
 
 | Service | Monthly Cost | Purpose |
 |---------|-------------|---------|
-| OpenAI API | $1-3 | Speech processing (fallback) |
-| Google Gemini | $2-5 | Rovo-powered analysis |
-| AWS EC2 | $5-10 | Proxy server hosting |
+| OpenAI API | $5-10 | Speech processing |
+| AWS EC2 | $8 | Proxy server hosting |
 | AWS S3 | $1 | File storage |
 | Domain (optional) | $1 | HTTPS endpoint |
-| **Total** | **~$10-20** | **Full Rovo deployment** |
+| **Total** | **~$15-20** | **Full deployment** |
 
 ## What You Get
 
-- ✅ **Rovo AI integration** for intelligent workspace analysis
 - ✅ **90% cost reduction** vs original approach
 - ✅ **Real-time voice transcription** (FREE with Web Speech API)
-- ✅ **Workspace-aware Jira/Confluence integration**
-- ✅ **Context-aware action extraction**
+- ✅ **Jira/Confluence integration**
 - ✅ **Production-ready architecture**
+- ✅ **Cost monitoring and optimization**
 - ✅ **Hackathon-friendly pricing**
 
 ## Ready to Deploy?
@@ -134,6 +131,6 @@ nano proxy/.env
 
 **Total setup time: 30 minutes**
 **Monthly cost: <$20**
-**Cost per session: <$0.05**
+**Cost per session: <$0.10**
 
-🎉 **Perfect for hackathons and production with Rovo AI!**
+🎉 **Perfect for hackathons and production!**
