@@ -1,0 +1,37 @@
+modules:
+  jira:projectPage:
+    - key: loomspeak-jira
+      resource: ui
+      resolver: resolver
+      title: LoomSpeak+
+      icon: https://your-cdn/icon.png
+  confluence:spacePage:
+    - key: loomspeak-conf
+      resource: ui
+      resolver: resolver
+      title: LoomSpeak+
+      icon: https://your-cdn/icon.png
+  function:
+    - key: resolver
+      handler: index.run
+resources:
+  - key: ui
+    path: static/loomspeak-ui/dist
+app:
+  id: your-app-id
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - read:me
+    - storage:app
+    - read:confluence-content.summary
+    - write:confluence-content
+    - read:confluence-space.summary
+  external:
+    fetch:
+      client:
+        - https://your-proxy-domain.com
+        - https://your-bucket.s3.amazonaws.com
+      backend:
+        - https://your-proxy-domain.com
