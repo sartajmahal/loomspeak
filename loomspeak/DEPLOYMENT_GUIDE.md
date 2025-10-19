@@ -158,10 +158,23 @@ permissions:
 
 ### 4.2 Build and Deploy
 ```bash
-cd forge-app/static/loomspeak-ui
+# Install Forge CLI (if not already installed)
+npm install -g @forge/cli
+
+# Login to Forge
+forge login
+
+# Build Forge app
+cd forge-app
 npm install
 npm run build
 
+# Build frontend
+cd static/loomspeak-ui
+npm install
+npm run build
+
+# Register and deploy
 cd ../../
 forge register  # Get your app ID
 forge deploy

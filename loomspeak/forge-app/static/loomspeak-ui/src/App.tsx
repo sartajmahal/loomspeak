@@ -3,6 +3,8 @@ import CostEffectiveRecorder from './components/CostEffectiveRecorder';
 import SmartUploader from './components/SmartUploader';
 import CostEffectiveAssistant from './components/CostEffectiveAssistant';
 import { ActionsReview } from './components/ActionsReview';
+import AtlassianOAuth from './components/AtlassianOAuth';
+import { forgeInvoke, handleForgeError, isForgeAvailable } from './forge-bridge';
 
 const PROXY_BASE = 'https://your-proxy-domain.com';
 
@@ -28,6 +30,8 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'record' | 'upload' | 'assistant'>('record');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   const uploadToS3ViaProxy = async (file: Blob, filename: string) => {
     const pres = await fetch(`${PROXY_BASE}/s3/presign?filename=${encodeURIComponent(filename)}`).then(r => r.json());
@@ -113,46 +117,82 @@ export default function App() {
     try {
       const createdItems = [];
       
+      // Check if Forge is available
+      if (!isForgeAvailable()) {
+        throw new Error('Forge bridge not available. Please ensure you are running this app in an Atlassian environment.');
+      }
+
+      // Execute Forge bot commands
       for (const action of acts) {
-        if (action.action === 'create_issue') {
-          const result = await (window as any).invoke('createJiraIssue', {
-            projectKey: action.project || 'ENG',
-            summary: action.title,
-            description: action.description || `Created from LoomSpeak+ session: ${sessionId}`,
-            points: action.points,
-            assigneeAccountId: action.assignee // Note: This should be accountId, not email
-          });
-          createdItems.push({ type: 'issue', key: result.key, id: result.id });
-        } else if (action.action === 'create_page') {
-          const result = await (window as any).invoke('createConfluencePage', {
-            spaceKey: action.spaceKey || 'DOC',
-            title: action.title,
-            bodyHtml: action.bodyHtml || `
-              <h2>${action.title}</h2>
-              <p>${action.description || ''}</p>
-              <hr>
-              <p><em>Created from LoomSpeak+ session: ${sessionId}</em></p>
-              ${transcript ? `<h3>Transcript</h3><pre>${transcript}</pre>` : ''}
-            `,
-            parentId: action.pageParentId
-          });
-          createdItems.push({ type: 'page', id: result.id });
+        try {
+          if (action.action === 'create_issue') {
+            const result = await forgeInvoke.createJiraIssue({
+              projectKey: action.project || 'ENG',
+              summary: action.title,
+              description: action.description || `Created from LoomSpeak+ session: ${sessionId}`,
+              points: action.points,
+              assigneeAccountId: action.assignee,
+              issueTypeName: 'Task'
+            });
+            createdItems.push({ 
+              type: 'jira_issue', 
+              key: result.key, 
+              id: result.id,
+              url: result.self,
+              title: action.title
+            });
+          } else if (action.action === 'create_page') {
+            const result = await forgeInvoke.createConfluencePage({
+              spaceKey: action.spaceKey || 'DOC',
+              title: action.title,
+              bodyHtml: action.bodyHtml || `
+                <h2>${action.title}</h2>
+                <p>${action.description || ''}</p>
+                <hr>
+                <p><em>Created from LoomSpeak+ session: ${sessionId}</em></p>
+                ${transcript ? `<h3>Transcript</h3><pre>${transcript}</pre>` : ''}
+              `,
+              parentId: action.pageParentId
+            });
+            createdItems.push({ 
+              type: 'confluence_page', 
+              id: result.id,
+              url: result._links?.webui,
+              title: action.title
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to create ${action.action}:`, error);
+          throw new Error(handleForgeError(error));
         }
       }
       
+      // Send Forge results to Gemini for final formatting
+      const formattedOutput = await fetch(`${PROXY_BASE}/format-output`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          forgeResults: createdItems,
+          sessionId,
+          originalActions: acts
+        })
+      }).then(r => r.json());
+      
       // Save session links
-      await (window as any).invoke('saveSessionLinks', {
+      await forgeInvoke.saveSessionLinks({
         sessionId,
-        relatedIssues: createdItems.filter(item => item.type === 'issue').map(item => item.key || item.id),
-        relatedPages: createdItems.filter(item => item.type === 'page').map(item => item.id),
+        relatedIssues: createdItems.filter(item => item.type === 'jira_issue').map(item => item.key || item.id),
+        relatedPages: createdItems.filter(item => item.type === 'confluence_page').map(item => item.id),
         meta: { 
           transcriptLen: transcript.length,
           actionCount: acts.length,
-          costOptimized: true
+          costOptimized: true,
+          geminiFormatted: true
         }
       });
       
-      alert(`Successfully created ${createdItems.length} items!`);
+      // Display formatted results
+      setSummary(formattedOutput.summary || `Successfully created ${createdItems.length} items!`);
       setActions([]);
       
     } catch (err: any) {
@@ -171,6 +211,11 @@ export default function App() {
     setError('');
   };
 
+  const handleAuthSuccess = (userData: any) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto p-6">
@@ -183,8 +228,15 @@ export default function App() {
           </div>
 
           <div className="p-6">
-            {/* Tab Navigation */}
-            <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
+            {/* Authentication */}
+            {!isAuthenticated ? (
+              <div className="mb-6">
+                <AtlassianOAuth onAuthSuccess={handleAuthSuccess} onError={setError} />
+              </div>
+            ) : (
+              <>
+                {/* Tab Navigation */}
+                <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
               <button
                 className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
                   activeTab === 'record'
@@ -309,6 +361,8 @@ export default function App() {
                   </button>
                 </div>
               </div>
+            )}
+              </>
             )}
           </div>
         </div>

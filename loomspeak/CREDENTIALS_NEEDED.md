@@ -2,30 +2,42 @@
 
 ## Required Credentials
 
-### 1. OpenAI API Key
+### 1. OpenAI API Key (Whisper only)
 - **Where to get**: https://platform.openai.com/api-keys
-- **Cost**: ~$5-10/month for typical usage
+- **Cost**: ~$3-6/month for Whisper usage
 - **Format**: `sk-...` (starts with sk-)
-- **Usage**: Speech-to-text and action extraction
+- **Usage**: Speech-to-text with Whisper API
 
-### 2. AWS S3 Bucket
+### 2. Google Gemini API Key
+- **Where to get**: https://makersuite.google.com/app/apikey
+- **Cost**: ~$2-4/month for action extraction
+- **Format**: `AIza...` (starts with AIza)
+- **Usage**: Action extraction and output formatting
+
+### 3. AWS S3 Bucket
 - **Where to get**: https://console.aws.amazon.com/s3/
 - **Cost**: ~$1/month for storage
 - **Format**: `loomspeak-media-yourname` (must be globally unique)
 - **Usage**: Store uploaded audio files
 
-### 3. AWS IAM Credentials (for EC2)
+### 4. AWS IAM Credentials (for EC2)
 - **Where to get**: https://console.aws.amazon.com/iam/
 - **Cost**: Free
 - **Format**: Access Key ID + Secret Access Key
 - **Usage**: Access S3 from EC2 instance
 
-### 4. EC2 Instance
+### 5. EC2 Instance
 - **Where to get**: https://console.aws.amazon.com/ec2/
 - **Cost**: ~$8/month (t3.micro)
 - **Usage**: Host the proxy server
 
-### 5. Domain Name (Optional)
+### 6. Atlassian API Token (For Forge CLI)
+- **Where to get**: https://id.atlassian.com/manage/api-tokens
+- **Cost**: Free
+- **Format**: API token string
+- **Usage**: Login to Forge CLI for deployment
+
+### 7. Domain Name (Optional)
 - **Where to get**: Any domain registrar
 - **Cost**: ~$10-15/year
 - **Alternative**: Use EC2 public IP address
