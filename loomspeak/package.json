@@ -1,0 +1,24 @@
+{
+  "name": "loomspeak-unified",
+  "version": "1.0.0",
+  "description": "Unified LoomSpeak server with OAuth and speak-to-text functionality",
+  "main": "unified-server.js",
+  "scripts": {
+    "start": "node unified-server.js",
+    "dev": "nodemon unified-server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^6.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

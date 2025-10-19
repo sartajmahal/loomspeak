@@ -6,8 +6,9 @@
     <title>Mic to MP3 Recorder with Transcription</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Domine:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
     <style>
         :root {
@@ -52,9 +53,9 @@
         }
         
         body {
-            background: var(--warm-cream);
-            font-family: 'Domine', serif;
-            color: var(--deep-brown);
+            background: #fff;
+            font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            color: #0f172a;
             line-height: 1.7;
             margin: 0;
             padding: 30px;
@@ -63,56 +64,18 @@
             position: relative;
         }
         
-        /* Multiple radiating circles background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(circle at 20% 20%, var(--muted-blue) 0%, transparent 15%),
-                radial-gradient(circle at 80% 20%, var(--accent-teal) 0%, transparent 12%),
-                radial-gradient(circle at 20% 80%, var(--accent-coral) 0%, transparent 18%),
-                radial-gradient(circle at 80% 80%, var(--accent-sage) 0%, transparent 14%),
-                radial-gradient(circle at 50% 50%, var(--muted-teal) 0%, transparent 20%);
-            opacity: 0.03;
-            pointer-events: none;
-            z-index: 0;
-        }
-        
-        /* Multiple wavy line patterns */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                /* Wavy lines at different angles */
-                linear-gradient(30deg, transparent 48%, var(--muted-blue) 49%, var(--muted-blue) 51%, transparent 52%),
-                linear-gradient(-30deg, transparent 48%, var(--accent-teal) 49%, var(--accent-teal) 51%, transparent 52%),
-                linear-gradient(60deg, transparent 48%, var(--accent-coral) 49%, var(--accent-coral) 51%, transparent 52%),
-                linear-gradient(-60deg, transparent 48%, var(--accent-sage) 49%, var(--accent-sage) 51%, transparent 52%),
-                /* Additional subtle waves */
-                linear-gradient(15deg, transparent 49%, var(--muted-teal) 50%, transparent 51%),
-                linear-gradient(-15deg, transparent 49%, var(--accent-mustard) 50%, transparent 51%);
-            background-size: 80px 80px, 100px 100px, 120px 120px, 90px 90px, 60px 60px, 70px 70px;
-            opacity: 0.02;
-            pointer-events: none;
-            z-index: 0;
-        }
+        /* remove decorative background patterns for app page */
+        body::before { content:none; }
+        body::after { content:none; }
         
         .container {
             max-width: 900px;
             margin: 0 auto;
-            background: var(--warm-white);
-            border: 1px solid var(--sage-green);
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 4px 16px rgba(93, 78, 55, 0.08), 0 1px 4px rgba(93, 78, 55, 0.04);
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
             position: relative;
             overflow: hidden;
             z-index: 1;
@@ -167,27 +130,9 @@
             position: relative;
         }
         
-        h1::before {
-            content: '';
-            position: absolute;
-            top: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 2px;
-            background: var(--muted-blue);
-            border-radius: 1px;
-        }
+        h1::before { display:none; }
         
-        h1::after {
-            content: '🎵';
-            position: absolute;
-            right: -35px;
-            top: 0;
-            font-size: 0.5em;
-            opacity: 0.6;
-            animation: gentle-float 4s ease-in-out infinite;
-        }
+        /* removed music note decoration on title */
         
         @keyframes gentle-float {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -222,38 +167,31 @@
             font-size: 1.05em;
         }
         .section {
-            margin-bottom: 35px;
-            padding: 25px;
-            border: 1px solid var(--sage-green);
-            border-radius: 8px;
-            background: var(--warm-white);
+            margin-bottom: 24px;
+            padding: 20px;
+            border: 1px dashed #e2e8f0;
+            border-radius: 12px;
+            background: #fff;
             position: relative;
             overflow: hidden;
         }
         
-        .section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 3px;
-            height: 100%;
-            background: var(--muted-blue);
-            border-radius: 0 1px 1px 0;
-        }
+        /* remove left accent line on section headers */
+        .section::before { content:none; }
         .btn {
-            padding: 10px 20px;
-            border: 1px solid var(--sage-green);
-            background: var(--warm-white);
-            color: var(--deep-brown);
+            padding: 10px 16px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #0f172a;
             cursor: pointer;
-            font-family: 'Domine', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 14px;
-            font-weight: 400;
+            font-weight: 500;
             margin: 6px;
             text-decoration: none;
-            display: inline-block;
-            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            border-radius: 8px;
             transition: all 0.2s ease;
             letter-spacing: 0.2px;
         }
@@ -269,11 +207,7 @@
             cursor: not-allowed;
             transform: none;
         }
-        .btn-primary {
-            background: var(--muted-blue);
-            color: var(--warm-white);
-            border-color: var(--muted-blue);
-        }
+        .btn-primary { background: #0052CC; color: #fff; border-color: #0052CC; }
         .btn-primary:hover:not(:disabled) {
             background: var(--muted-blue-dark);
             border-color: var(--muted-blue-dark);
@@ -287,11 +221,7 @@
             background: var(--deep-brown);
             border-color: var(--deep-brown);
         }
-        .btn-info {
-            background: var(--accent-teal);
-            color: var(--warm-white);
-            border-color: var(--accent-teal);
-        }
+        .btn-info { background: #0ea5a4; color: #fff; border-color: #0ea5a4; }
         .btn-info:hover:not(:disabled) {
             background: var(--muted-blue-dark);
             border-color: var(--muted-blue-dark);
@@ -351,24 +281,8 @@
             overflow: hidden;
         }
         
-        .drop-area::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                repeating-linear-gradient(
-                    45deg,
-                    transparent,
-                    transparent 30px,
-                    var(--muted-blue) 30px,
-                    var(--muted-blue) 31px
-                );
-            opacity: 0.05;
-            transition: opacity 0.2s ease;
-        }
+        /* remove background pattern from drop area */
+        .drop-area::before { content:none; }
         
         .drop-area:hover::before {
             opacity: 0.1;
@@ -398,18 +312,17 @@
         }
         
         .transcription-result {
-            background: var(--warm-cream);
-            padding: 20px;
-            border: 1px solid var(--sage-green);
+            background: #f8fafc;
+            padding: 16px;
+            border: 1px dashed #e2e8f0;
             white-space: pre-wrap;
             min-height: 100px;
             max-height: 300px;
             overflow-y: auto;
             position: relative;
-            border-radius: 6px;
-            font-size: 1em;
-            line-height: 1.5;
-            box-shadow: inset 0 1px 2px rgba(93, 78, 55, 0.05);
+            border-radius: 12px;
+            font-size: 0.95em;
+            line-height: 1.6;
         }
         
         .transcription-result::before {
@@ -643,30 +556,25 @@
             position: relative;
         }
         
-        .text-center p::after {
-            content: '🎵';
-            position: absolute;
-            right: -20px;
-            top: 0;
-            font-size: 0.7em;
-            opacity: 0.4;
-            animation: gentle-float 6s ease-in-out infinite;
-        }
+        /* removed music note decoration near subtitle */
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>
-            <i class="fas fa-microphone-alt mr-3"></i>LoomSpeak
-        </h1>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+            <h1 style="margin:0; color:#0f172a;">
+                <i class="fas fa-microphone-alt mr-3"></i>LoomSpeak
+            </h1>
+            <a href="/logout" class="btn" style="white-space:nowrap; background:#0052CC; border-color:#0052CC; color:#fff;">Logout</a>
+        </div>
         <p class="text-center text-lg mb-10 opacity-80">
             Record your voice, convert to MP3, and transcribe to text with AI.
         </p>
 
         <!-- Recording Section -->
-        <div class="section">
+        <div class="section" style="border-color:#e2e8f0;">
             <h2>
-                🎙️ Record Audio
+                Record Audio
             </h2>
             <div class="flex flex-col sm:flex-row justify-center mb-6">
                 <button id="startBtn" class="btn btn-primary">
@@ -693,9 +601,9 @@
         </div>
 
         <!-- File Upload Section -->
-        <div class="section">
+        <div class="section" style="border-color:#e2e8f0;">
             <h2>
-                📁 Upload Audio File
+                Upload Audio File
             </h2>
             <div id="uploadArea" class="drop-area">
                 <i class="fas fa-cloud-upload-alt text-5xl opacity-70 mb-4"></i>
@@ -705,7 +613,7 @@
             </div>
             <div id="filePreview" class="file-preview flex items-center justify-between">
                 <div class="flex items-center">
-                    <i class="fas fa-file-audio text-3xl mr-3 opacity-70"></i>
+                    <i class="fas fa-file text-3xl mr-3 opacity-70"></i>
                     <div>
                         <p id="fileName" class="font-medium"></p>
                         <p id="fileSize" class="text-sm opacity-70"></p>
@@ -715,12 +623,13 @@
                     <i class="fas fa-file-alt mr-2"></i>Transcribe File
                 </button>
             </div>
+            
         </div>
 
         <!-- Transcription Results -->
-        <div id="transcriptionSection" class="section hidden">
+        <div id="transcriptionSection" class="section hidden" style="border-color:#e2e8f0;">
             <h2>
-                📝 Transcription Results
+                Transcription Results
             </h2>
             <div style="position: relative;">
                 <div id="transcriptionResult" class="transcription-result">

@@ -13,6 +13,7 @@ class MicToMP3Transcriber {
         this.status = document.getElementById('status');
         this.downloadSection = document.getElementById('downloadSection');
         this.fileInfo = document.getElementById('fileInfo');
+        this.uploadStatus = document.getElementById('uploadStatus');
         this.transcriptionSection = document.getElementById('transcriptionSection');
         this.transcriptionResult = document.getElementById('transcriptionResult');
         this.copyBtn = document.getElementById('copyBtn');
@@ -112,7 +113,7 @@ class MicToMP3Transcriber {
 
     async saveToServer(mp3Blob) {
         try {
-            this.updateStatus('Saving MP3 file...', 'processing');
+                this.updateStatus('Saving file...', 'processing');
 
             const formData = new FormData();
             this.currentFilename = `recording-${Date.now()}.mp3`;
@@ -229,12 +230,6 @@ class MicToMP3Transcriber {
     }
 
     processSelectedFile(file) {
-        // Validate file type
-        if (!file.type.startsWith('audio/')) {
-            this.updateStatus('Please select an audio file', 'error');
-            return;
-        }
-
         // Validate file size (25MB limit)
         const maxSize = 25 * 1024 * 1024; // 25MB
         if (file.size > maxSize) {
@@ -381,6 +376,7 @@ class MicToMP3Transcriber {
             });
         }
     }
+
 }
 
 // Initialize when page loads
