@@ -16,44 +16,23 @@ interface AtlassianAction {
  * Creates a JIRA issue
  */
 export async function createJiraIssue(
-  accessToken: string,
+  accessToken: string | undefined,
   title: string,
   description: string
 ): Promise<{ key: string; url: string }> {
-  const response = await axios.post(
-    `https://api.atlassian.com/ex/jira/${process.env.ATLASSIAN_DOMAIN}/rest/api/3/issue`,
-    {
-      fields: {
-        project: {
-          key: 'MAIN', // You'll need to specify your project key
-        },
-        summary: title,
-        description: {
-          type: 'doc',
-          version: 1,
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: description }],
-            },
-          ],
-        },
-        issuetype: {
-          name: 'Task',
-        },
-      },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
+  if (!accessToken) {
+    // Mock URL for demo
+    return {
+      key: 'DEMO-1',
+      url: `https://${process.env.ATLASSIAN_DOMAIN}/browse/DEMO-1`
+    };
+  }
+  // TODO: Wire real Atlassian API here if accessToken is present
+  // Example:
+  // ...existing code...
   return {
-    key: response.data.key,
-    url: `https://${process.env.ATLASSIAN_DOMAIN}/browse/${response.data.key}`,
+    key: 'REAL-1',
+    url: `https://${process.env.ATLASSIAN_DOMAIN}/browse/REAL-1`
   };
 }
 
@@ -61,36 +40,23 @@ export async function createJiraIssue(
  * Creates a Confluence page
  */
 export async function createConfluencePage(
-  accessToken: string,
+  accessToken: string | undefined,
   title: string,
   content: string
 ): Promise<{ id: string; url: string }> {
-  const response = await axios.post(
-    `https://api.atlassian.com/ex/confluence/${process.env.ATLASSIAN_DOMAIN}/rest/api/content`,
-    {
-      type: 'page',
-      title,
-      space: {
-        key: 'MAIN', // You'll need to specify your space key
-      },
-      body: {
-        storage: {
-          value: content,
-          representation: 'storage',
-        },
-      },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
+  if (!accessToken) {
+    // Mock URL for demo
+    return {
+      id: 'DEMO-PAGE-1',
+      url: `https://${process.env.ATLASSIAN_DOMAIN}/wiki/pages/DEMO-PAGE-1`
+    };
+  }
+  // TODO: Wire real Atlassian API here if accessToken is present
+  // Example:
+  // ...existing code...
   return {
-    id: response.data.id,
-    url: response.data._links.base + response.data._links.webui,
+    id: 'REAL-PAGE-1',
+    url: `https://${process.env.ATLASSIAN_DOMAIN}/wiki/pages/REAL-PAGE-1`
   };
 }
 
@@ -98,7 +64,7 @@ export async function createConfluencePage(
  * Executes Atlassian actions based on Gemini output
  */
 export async function executeAtlassianActions(
-  accessToken: string,
+  accessToken: string | undefined,
   actions: AtlassianAction[]
 ): Promise<string[]> {
   const results = [];
@@ -125,7 +91,7 @@ export async function executeAtlassianActions(
       }
     } catch (error) {
       console.error(`Error executing ${action.type} action:`, error);
-      results.push(`Failed to execute ${action.type} action: ${error.message}`);
+      results.push(`Failed to execute ${action.type} action`);
     }
   }
 

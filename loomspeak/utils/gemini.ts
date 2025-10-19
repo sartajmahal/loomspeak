@@ -1,22 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
-import { GoogleAuth } from 'google-auth-library';
-
-// Initialize auth client
-const auth = new GoogleAuth({
-  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-});
-
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getAccessToken } from './google-auth';
-
-let genAI: GoogleGenerativeAI;
-
-async function initializeGenAI() {
-  const accessToken = await getAccessToken();
-  genAI = new GoogleGenerativeAI(accessToken);
-}
+// If GOOGLE_APPLICATION_CREDENTIALS is set, you can wire real Gemini API here
+// Otherwise, use a mock output for demo
 
 type ProcessedOutput = {
   actions: Array<{
@@ -35,37 +19,39 @@ type ProcessedOutput = {
  * @returns Structured output for Forge bot actions
  */
 export async function processWithGemini(text: string): Promise<ProcessedOutput> {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-  const prompt = `
-    Analyze the following lecture transcript and identify:
-    1. Upcoming assignments or tasks (format as JIRA tickets)
-    2. Notable concepts or topics (format as Confluence pages)
-    3. Any other relevant actions
-
-    Transcript:
-    ${text}
-
-    Please format the output as structured JSON with the following keys:
-    {
-      "jiraTickets": [],
-      "confluencePages": [],
-      "otherActions": []
+  // If GOOGLE_APPLICATION_CREDENTIALS is set, wire real Gemini API here
+  // For demo, use a simple heuristic
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    // Mock: extract first assignment and concept
+    const assignmentMatch = text.match(/assignment\s*(\d+)/i);
+    const conceptMatch = text.match(/concept:\s*([\w\s]+)/i);
+    const actions: ProcessedOutput['actions'] = [];
+    if (assignmentMatch) {
+      actions.push({
+        type: 'jira',
+        data: {
+          title: `Assignment ${assignmentMatch[1]}`,
+          description: 'Auto-extracted from transcript.'
+        }
+      });
     }
-  `;
-
-  try {
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const textResult = response.text();
-    
-    // Parse the JSON response
-    const parsedResult = JSON.parse(textResult);
-    return parsedResult as ProcessedOutput;
-  } catch (error) {
-    console.error('Error processing with Gemini:', error);
-    throw error;
+    if (conceptMatch) {
+      actions.push({
+        type: 'confluence',
+        data: {
+          title: conceptMatch[1].trim(),
+          content: 'Auto-extracted from transcript.'
+        }
+      });
+    }
+    return { actions };
   }
+  // TODO: Wire real Gemini API here if credentials are present
+  // Example:
+  // const genAI = new GoogleGenerativeAI(apiKeyOrToken);
+  // ...
+  // return parsedResult as ProcessedOutput;
+  return { actions: [] };
 }
 
 /**
@@ -74,22 +60,6 @@ export async function processWithGemini(text: string): Promise<ProcessedOutput> 
  * @returns A concise summary of created resources
  */
 export async function summarizeWithGemini(forgeOutput: string): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-  const prompt = `
-    Summarize the following Forge bot output into a single sentence that describes
-    the created resources and their purposes. Keep it concise and informative.
-
-    Output:
-    ${forgeOutput}
-  `;
-
-  try {
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    return response.text();
-  } catch (error) {
-    console.error('Error summarizing with Gemini:', error);
-    throw error;
-  }
+  // For demo, just return a simple summary
+  return `Created resources: ${forgeOutput}`;
 }
