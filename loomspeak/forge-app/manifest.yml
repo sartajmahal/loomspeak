@@ -22,12 +22,39 @@ app:
 permissions:
   scopes:
     - read:jira-work
+    - manage:jira-project
+    - manage:jira-configuration
+    - read:jira-user
     - write:jira-work
-    - read:me
-    - storage:app
-    - read:confluence-content.summary
+    - manage:jira-webhook
+    - manage:jira-data-provider
     - write:confluence-content
     - read:confluence-space.summary
+    - write:confluence-space
+    - write:confluence-file
+    - read:confluence-props
+    - write:confluence-props
+    - manage:confluence-configuration
+    - read:confluence-content.all
+    - read:confluence-content.summary
+    - search:confluence
+    - read:confluence-content.permission
+    - read:confluence-user
+    - read:confluence-groups
+    - write:confluence-groups
+    - readonly:content.attachment:confluence
+    - write:component:compass
+    - read:scorecard:compass
+    - write:scorecard:compass
+    - read:component:compass
+    - read:event:compass
+    - write:event:compass
+    - read:metric:compass
+    - write:metric:compass
+    - read:me
+    - read:account
+    - report:personal-data
+    - storage:app
   external:
     fetch:
       client:

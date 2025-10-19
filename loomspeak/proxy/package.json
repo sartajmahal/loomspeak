@@ -1,7 +1,7 @@
 {
   "name": "loomspeak-proxy",
   "version": "1.0.0",
-  "description": "Cost-optimized proxy server for LoomSpeak+",
+  "description": "Rovo-powered proxy server for LoomSpeak+ (no S3 required)",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
@@ -12,8 +12,6 @@
     "pm2:restart": "pm2 restart loomspeak-proxy"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.450.0",
-    "@aws-sdk/s3-request-presigner": "^3.450.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
