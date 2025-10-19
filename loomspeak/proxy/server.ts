@@ -19,6 +19,7 @@ const {
   AWS_REGION,
   S3_BUCKET,
   OPENAI_API_KEY,
+  GEMINI_API_KEY,
   PRESIGN_TTL_SECONDS = '900'
 } = process.env;
 
@@ -62,7 +63,39 @@ app.get('/s3/presign', async (req, res) => {
   }
 });
 
-// Optimized audio processing with cost controls
+// Optimized S3 preprocessing - store only transcript
+async function preprocessWithS3(transcript: string, sessionId: string) {
+  try {
+    // Store only the transcript in S3
+    const transcriptKey = `transcripts/${sessionId}-${Date.now()}.txt`;
+    const transcriptCmd = new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: transcriptKey,
+      Body: transcript,
+      ContentType: 'text/plain',
+      Metadata: {
+        'session-id': sessionId,
+        'processing-stage': 'transcript-storage',
+        'transcript-length': transcript.length.toString()
+      }
+    });
+    await s3.send(transcriptCmd);
+    const transcriptUrl = `https://${S3_BUCKET}.s3.amazonaws.com/${transcriptKey}`;
+
+    // Return minimal data - just what we need
+    return { 
+      transcriptUrl,
+      sessionId,
+      transcriptLength: transcript.length,
+      timestamp: Date.now()
+    };
+  } catch (error) {
+    console.error('S3 preprocessing error:', error);
+    throw new Error(`S3 preprocessing failed: ${error.message}`);
+  }
+}
+
+// Optimized audio processing with S3 preprocessing
 app.post('/process', async (req, res) => {
   try {
     const { mediaUrl, sourceTranscript, optimizeForCost = true } = req.body;
@@ -84,8 +117,6 @@ app.post('/process', async (req, res) => {
     }
 
     let transcript = sourceTranscript || '';
-    let summary = '';
-    let actions: any[] = [];
 
     // 2) Use source transcript if available (from Web Speech API - FREE)
     if (sourceTranscript && sourceTranscript.trim().length > 10) {
@@ -97,7 +128,12 @@ app.post('/process', async (req, res) => {
       transcript = await transcribeWithWhisper(mediaBuffer, optimizeForCost);
     }
 
-    // 4) Extract actions and summary using cost-optimized approach
+    // 4) S3 Preprocessing - Store only transcript
+    const s3Data = await preprocessWithS3(transcript, sessionId);
+
+    // 5) Extract actions using Gemini
+    let summary = '';
+    let actions: any[] = [];
     if (transcript.trim().length > 0) {
       const extractionResult = await extractActionsCostOptimized(transcript, optimizeForCost);
       summary = extractionResult.summary;
@@ -109,6 +145,7 @@ app.post('/process', async (req, res) => {
       transcript, 
       summary, 
       actions,
+      s3Data,
       costOptimized: optimizeForCost,
       processingMethod: sourceTranscript ? 'web-speech-api' : 'whisper-api'
     });
@@ -166,49 +203,66 @@ async function transcribeWithWhisper(audioBuffer: Buffer, optimizeForCost: boole
   }
 }
 
-// Cost-optimized action extraction
+// Cost-optimized action extraction using Gemini
 async function extractActionsCostOptimized(transcript: string, optimizeForCost: boolean): Promise<{summary: string, actions: any[]}> {
   try {
-    // For cost optimization, use simpler prompts and cheaper models
-    const systemPrompt = optimizeForCost 
-      ? 'Extract actionable items from meeting transcript. Be concise. Output JSON only.'
-      : 'You are LoomSpeak+, an Atlassian assistant. Extract actionable items and a concise meeting summary.';
+    // Gemini system prompt for action extraction
+    const systemPrompt = `You are LoomSpeak+, an Atlassian assistant. Extract actionable items from meeting/lecture transcripts and categorize them:
 
-    const userPrompt = optimizeForCost
-      ? `Transcript: ${transcript}\n\nExtract tasks as JSON array with: action, title, description, project, points, assignee.`
-      : `Transcript:\n${transcript}\n\nOutput structured actions.`;
+1. JIRA TICKETS: Upcoming assignments, tasks, deadlines, bugs to fix
+2. CONFLUENCE PAGES: Notable concepts, lecture notes, important information
+3. OTHER: Any other actionable items
 
-    // Use cheaper model for cost optimization
-    const model = optimizeForCost ? 'gpt-4o-mini' : 'gpt-4o';
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+Return JSON with this structure:
+{
+  "summary": "Brief meeting/lecture summary",
+  "actions": [
+    {
+      "action": "create_issue|create_page|other",
+      "title": "Task/Page title",
+      "description": "Detailed description",
+      "project": "Project key (e.g., ENG, DOC)",
+      "points": 2,
+      "assignee": "email@example.com",
+      "dueDate": "Friday",
+      "spaceKey": "DOC",
+      "category": "assignment|concept|other"
+    }
+  ]
+}`;
+
+    const userPrompt = `Transcript: ${transcript}\n\nExtract actionable items and create a summary.`;
+
+    // Use Gemini API
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 
-        'Authorization': `Bearer ${OPENAI_API_KEY}`, 
         'Content-Type': 'application/json' 
       },
       body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: optimizeForCost ? 500 : 1000, // Limit tokens for cost control
-        temperature: 0.1, // Low temperature for consistent output
-        response_format: { type: 'json_object' }
+        contents: [{
+          parts: [{
+            text: `${systemPrompt}\n\n${userPrompt}`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: optimizeForCost ? 500 : 1000,
+          responseMimeType: "application/json"
+        }
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
-    const content = result.choices?.[0]?.message?.content;
+    const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!content) {
-      throw new Error('No content received from OpenAI API');
+      throw new Error('No content received from Gemini API');
     }
 
     try {
@@ -278,6 +332,63 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Final Gemini formatting endpoint
+app.post('/format-output', async (req, res) => {
+  try {
+    const { forgeResults, sessionId, originalActions } = req.body;
+    
+    const formatPrompt = `You are LoomSpeak+'s output formatter. Take the Forge bot results and create a concise summary.
+
+Forge Results: ${JSON.stringify(forgeResults)}
+
+Create a response with:
+1. Links to created items (Jira tickets, Confluence pages)
+2. One sentence description of what each item relates to
+3. Total count of items created
+
+Format as JSON:
+{
+  "summary": "Created X items from your session",
+  "items": [
+    {
+      "type": "jira_issue|confluence_page|other",
+      "title": "Item title",
+      "url": "https://link-to-item",
+      "description": "One sentence description"
+    }
+  ],
+  "sessionId": "${sessionId}"
+}`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: formatPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 300,
+          responseMimeType: "application/json"
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini formatting error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const formattedOutput = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    res.json(JSON.parse(formattedOutput || '{}'));
+  } catch (error: any) {
+    console.error('Formatting error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Cost monitoring endpoint
 app.get('/cost-info', (req, res) => {
   res.json({
@@ -291,7 +402,7 @@ app.get('/cost-info', (req, res) => {
     },
     estimatedCosts: {
       whisperPerMinute: 0.006, // $0.006 per minute
-      gpt4oMiniPer1kTokens: 0.00015, // $0.00015 per 1k tokens
+      geminiPer1kTokens: 0.000075, // $0.000075 per 1k tokens (cheaper than GPT-4o-mini!)
       webSpeechAPI: 0 // Free
     }
   });
