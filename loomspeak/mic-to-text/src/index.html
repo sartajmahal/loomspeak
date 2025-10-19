@@ -3,125 +3,733 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LoomSpeak - Mic to Text</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Mic to MP3 Recorder with Transcription</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Domine:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .glass-effect { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.1); }
+        :root {
+            /* Minimalistic coordinated palette */
+            --warm-cream: #faf8f5;
+            --soft-beige: #f5f1eb;
+            --warm-gray: #8b7355;
+            --sage-green: #9caf88;
+            --terracotta: #d4a574;
+            --deep-brown: #5d4e37;
+            --soft-orange: #e8b4a0;
+            --warm-white: #fefcf9;
+            
+            /* Muted coordinated colors */
+            --muted-blue: #6b7280;
+            --muted-blue-light: #f3f4f6;
+            --muted-blue-medium: #9ca3af;
+            --muted-blue-dark: #4b5563;
+            --muted-teal: #6b7280;
+            --muted-teal-light: #f9fafb;
+            
+            /* Subtle accent colors */
+            --accent-blue: #64748b;
+            --accent-teal: #64748b;
+            --accent-coral: #78716c;
+            --accent-mustard: #78716c;
+            --accent-sage: #6b7280;
+            
+            /* Very subtle accent colors */
+            --soft-blue: #f8fafc;
+            --medium-blue: #cbd5e1;
+            --deep-blue: #475569;
+            --periwinkle: #94a3b8;
+            
+            /* Minimal personality colors */
+            --coral: #a78baf;
+            --coral-light: #f5f3f7;
+            --mint: #9ca3af;
+            --mint-light: #f9fafb;
+            --lavender: #a1a1aa;
+            --lavender-light: #fafafa;
+        }
+        
+        body {
+            background: var(--warm-cream);
+            font-family: 'Domine', serif;
+            color: var(--deep-brown);
+            line-height: 1.7;
+            margin: 0;
+            padding: 30px;
+            font-weight: 400;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Multiple radiating circles background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, var(--muted-blue) 0%, transparent 15%),
+                radial-gradient(circle at 80% 20%, var(--accent-teal) 0%, transparent 12%),
+                radial-gradient(circle at 20% 80%, var(--accent-coral) 0%, transparent 18%),
+                radial-gradient(circle at 80% 80%, var(--accent-sage) 0%, transparent 14%),
+                radial-gradient(circle at 50% 50%, var(--muted-teal) 0%, transparent 20%);
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* Multiple wavy line patterns */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                /* Wavy lines at different angles */
+                linear-gradient(30deg, transparent 48%, var(--muted-blue) 49%, var(--muted-blue) 51%, transparent 52%),
+                linear-gradient(-30deg, transparent 48%, var(--accent-teal) 49%, var(--accent-teal) 51%, transparent 52%),
+                linear-gradient(60deg, transparent 48%, var(--accent-coral) 49%, var(--accent-coral) 51%, transparent 52%),
+                linear-gradient(-60deg, transparent 48%, var(--accent-sage) 49%, var(--accent-sage) 51%, transparent 52%),
+                /* Additional subtle waves */
+                linear-gradient(15deg, transparent 49%, var(--muted-teal) 50%, transparent 51%),
+                linear-gradient(-15deg, transparent 49%, var(--accent-mustard) 50%, transparent 51%);
+            background-size: 80px 80px, 100px 100px, 120px 120px, 90px 90px, 60px 60px, 70px 70px;
+            opacity: 0.02;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--warm-white);
+            border: 1px solid var(--sage-green);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 16px rgba(93, 78, 55, 0.08), 0 1px 4px rgba(93, 78, 55, 0.04);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        /* Subtle wavy pattern overlay behind container */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: 
+                radial-gradient(ellipse at 30% 30%, var(--muted-blue) 0%, transparent 25%),
+                radial-gradient(ellipse at 70% 70%, var(--accent-teal) 0%, transparent 20%),
+                radial-gradient(ellipse at 50% 10%, var(--accent-coral) 0%, transparent 15%);
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Wavy line decoration behind container */
+        .container::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background-image: 
+                linear-gradient(45deg, transparent 48%, var(--muted-blue) 49%, var(--muted-blue) 51%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, var(--accent-teal) 49%, var(--accent-teal) 51%, transparent 52%),
+                linear-gradient(15deg, transparent 49%, var(--accent-coral) 50%, transparent 51%);
+            background-size: 40px 40px, 60px 60px, 80px 80px;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .container > * {
+            position: relative;
+            z-index: 1;
+        }
+        h1 {
+            font-size: 2.6em;
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--deep-brown);
+            font-weight: 500;
+            letter-spacing: -0.3px;
+            position: relative;
+        }
+        
+        h1::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: var(--muted-blue);
+            border-radius: 1px;
+        }
+        
+        h1::after {
+            content: '🎵';
+            position: absolute;
+            right: -35px;
+            top: 0;
+            font-size: 0.5em;
+            opacity: 0.6;
+            animation: gentle-float 4s ease-in-out infinite;
+        }
+        
+        @keyframes gentle-float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-2px) rotate(5deg); }
+        }
+        
+        h2 {
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            color: var(--warm-gray);
+            border-bottom: 1px solid var(--sage-green);
+            padding-bottom: 8px;
+            font-weight: 400;
+            position: relative;
+            display: inline-block;
+        }
+        
+        h2::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 16px;
+            background: var(--muted-blue);
+            border-radius: 1px;
+        }
+        
+        p {
+            margin-bottom: 18px;
+            font-size: 1.05em;
+        }
+        .section {
+            margin-bottom: 35px;
+            padding: 25px;
+            border: 1px solid var(--sage-green);
+            border-radius: 8px;
+            background: var(--warm-white);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--muted-blue);
+            border-radius: 0 1px 1px 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: 1px solid var(--sage-green);
+            background: var(--warm-white);
+            color: var(--deep-brown);
+            cursor: pointer;
+            font-family: 'Domine', serif;
+            font-size: 14px;
+            font-weight: 400;
+            margin: 6px;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            letter-spacing: 0.2px;
+        }
+        
+        .btn:hover:not(:disabled) {
+            background: var(--sage-green);
+            color: var(--warm-white);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(156, 175, 136, 0.2);
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-primary {
+            background: var(--muted-blue);
+            color: var(--warm-white);
+            border-color: var(--muted-blue);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: var(--muted-blue-dark);
+            border-color: var(--muted-blue-dark);
+        }
+        .btn-danger {
+            background: var(--accent-coral);
+            color: var(--warm-white);
+            border-color: var(--accent-coral);
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: var(--deep-brown);
+            border-color: var(--deep-brown);
+        }
+        .btn-info {
+            background: var(--accent-teal);
+            color: var(--warm-white);
+            border-color: var(--accent-teal);
+        }
+        .btn-info:hover:not(:disabled) {
+            background: var(--muted-blue-dark);
+            border-color: var(--muted-blue-dark);
+        }
+        .status-text {
+            font-weight: 400;
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1em;
+            padding: 8px 16px;
+            border-radius: 16px;
+            display: inline-block;
+            position: relative;
+        }
+        .status-info { 
+            color: var(--muted-blue);
+            background: var(--muted-blue-light);
+            border: 1px solid var(--muted-blue);
+        }
+        .status-recording { 
+            color: var(--accent-coral);
+            background: var(--coral-light);
+            border: 1px solid var(--accent-coral);
+            animation: gentle-pulse 3s ease-in-out infinite;
+        }
+        .status-processing { 
+            color: var(--accent-teal);
+            background: var(--mint-light);
+            border: 1px solid var(--accent-teal);
+        }
+        .status-success { 
+            color: var(--accent-sage);
+            background: var(--muted-teal-light);
+            border: 1px solid var(--accent-sage);
+        }
+        .status-error { 
+            color: var(--accent-coral);
+            background: var(--coral-light);
+            border: 1px solid var(--accent-coral);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .drop-area {
+            border: 2px dashed var(--sage-green);
+            background: var(--soft-beige);
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            margin: 20px 0;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .drop-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 30px,
+                    var(--muted-blue) 30px,
+                    var(--muted-blue) 31px
+                );
+            opacity: 0.05;
+            transition: opacity 0.2s ease;
+        }
+        
+        .drop-area:hover::before {
+            opacity: 0.1;
+        }
+        
+        .drop-area.hover {
+            border-color: var(--muted-blue);
+            background: var(--muted-blue-light);
+        }
+        .file-preview {
+            display: none;
+            padding: 15px;
+            border: 1px solid var(--accent-teal);
+            margin: 15px 0;
+            background: var(--mint-light);
+            border-radius: 6px;
+            position: relative;
+        }
+        
+        .file-preview::before {
+            content: '📁';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 1em;
+            opacity: 0.7;
+        }
+        
+        .transcription-result {
+            background: var(--warm-cream);
+            padding: 20px;
+            border: 1px solid var(--sage-green);
+            white-space: pre-wrap;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            position: relative;
+            border-radius: 6px;
+            font-size: 1em;
+            line-height: 1.5;
+            box-shadow: inset 0 1px 2px rgba(93, 78, 55, 0.05);
+        }
+        
+        .transcription-result::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--muted-blue);
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 6px 10px;
+            font-size: 12px;
+            background: var(--muted-blue);
+            color: var(--warm-white);
+            border: none;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            background: var(--muted-blue-dark);
+        }
+        .hidden {
+            display: none;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .mb-6 {
+            margin-bottom: 25px;
+        }
+        .mb-8 {
+            margin-bottom: 35px;
+        }
+        .mb-10 {
+            margin-bottom: 45px;
+        }
+        .flex {
+            display: flex;
+        }
+        .flex-col {
+            flex-direction: column;
+        }
+        .justify-center {
+            justify-content: center;
+        }
+        .items-center {
+            align-items: center;
+        }
+        .justify-between {
+            justify-content: space-between;
+        }
+        .mr-1 {
+            margin-right: 6px;
+        }
+        .mr-2 {
+            margin-right: 10px;
+        }
+        .mr-3 {
+            margin-right: 15px;
+        }
+        .mt-2 {
+            margin-top: 10px;
+        }
+        .opacity-70 {
+            opacity: 0.7;
+        }
+        .opacity-80 {
+            opacity: 0.8;
+        }
+        .text-sm {
+            font-size: 0.95em;
+        }
+        .text-lg {
+            font-size: 1.15em;
+        }
+        .font-medium {
+            font-weight: 500;
+        }
+        .font-semibold {
+            font-weight: 600;
+        }
+        .font-bold {
+            font-weight: 700;
+        }
+        .leading-relaxed {
+            line-height: 1.7;
+        }
+        .whitespace-pre-wrap {
+            white-space: pre-wrap;
+        }
+        .min-h-screen {
+            min-height: 100vh;
+        }
+        .p-4 {
+            padding: 20px;
+        }
+        .p-6 {
+            padding: 30px;
+        }
+        .p-10 {
+            padding: 50px;
+        }
+        .rounded-lg {
+            border-radius: 6px;
+        }
+        .text-white {
+            color: var(--warm-white);
+        }
+        .text-4xl {
+            font-size: 2.5em;
+        }
+        .text-2xl {
+            font-size: 1.6em;
+        }
+        .text-3xl {
+            font-size: 2em;
+        }
+        .text-5xl {
+            font-size: 3.2em;
+        }
+        .bg-white\/10 {
+            background: rgba(254, 252, 249, 0.1);
+        }
+        .bg-gray-800 {
+            background: var(--deep-brown);
+        }
+        .bg-gray-700 {
+            background: var(--warm-gray);
+        }
+        .bg-gray-600 {
+            background: var(--sage-green);
+        }
+        .text-gray-800 {
+            color: var(--deep-brown);
+        }
+        .sm\:flex-row {
+            flex-direction: column;
+        }
+        @media (min-width: 640px) {
+            .sm\:flex-row {
+                flex-direction: row;
+            }
+        }
+        
+        /* Minimalistic modern touches */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(45deg, var(--muted-blue), var(--accent-teal), var(--accent-coral));
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .container {
+            position: relative;
+        }
+        
+        /* Subtle animations */
+        .btn, .drop-area, .section {
+            transition: all 0.2s ease;
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Minimal focus states */
+        .btn:focus {
+            outline: 1px solid var(--muted-blue);
+            outline-offset: 1px;
+        }
+        
+        /* Gentle hover effects */
+        .section:hover {
+            border-color: var(--accent-teal);
+            box-shadow: 0 2px 8px rgba(107, 114, 128, 0.08);
+        }
+        
+        /* Subtle micro-interactions */
+        .btn i {
+            transition: transform 0.2s ease;
+        }
+        
+        .btn:hover i {
+            transform: scale(1.02);
+        }
+        
+        /* Gentle floating animation */
+        .fa-microphone-alt {
+            animation: gentle-float 5s ease-in-out infinite;
+        }
+        
+        /* Processing indicator */
+        .status-processing::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border: 1px solid var(--accent-teal);
+            border-top: 1px solid transparent;
+            border-radius: 50%;
+            animation: gentle-spin 2s linear infinite;
+        }
+        
+        @keyframes gentle-spin {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+        
+        @keyframes gentle-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        /* Minimal typography enhancement */
+        .text-center p {
+            position: relative;
+        }
+        
+        .text-center p::after {
+            content: '🎵';
+            position: absolute;
+            right: -20px;
+            top: 0;
+            font-size: 0.7em;
+            opacity: 0.4;
+            animation: gentle-float 6s ease-in-out infinite;
+        }
     </style>
 </head>
-<body class="gradient-bg min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">
-                <i class="fas fa-microphone mr-4"></i>
-                LoomSpeak
-            </h1>
-            <p class="text-xl text-white/80 max-w-2xl mx-auto">
-                Record audio from your microphone and convert it to text using AI transcription
-            </p>
+<body>
+    <div class="container">
+        <h1>
+            <i class="fas fa-microphone-alt mr-3"></i>LoomSpeak
+        </h1>
+        <p class="text-center text-lg mb-10 opacity-80">
+            Record your voice, convert to MP3, and transcribe to text with AI.
+        </p>
+
+        <!-- Recording Section -->
+        <div class="section">
+            <h2>
+                🎙️ Record Audio
+            </h2>
+            <div class="flex flex-col sm:flex-row justify-center mb-6">
+                <button id="startBtn" class="btn btn-primary">
+                    <i class="fas fa-play mr-2"></i>Start Recording
+                </button>
+                <button id="stopBtn" class="btn btn-danger" disabled>
+                    <i class="fas fa-stop mr-2"></i>Stop Recording
+                </button>
+            </div>
+            <p id="status" class="text-center status-info text-lg"></p>
         </div>
 
-        <!-- Main Content -->
-        <div class="max-w-4xl mx-auto">
-            <!-- Recording Section -->
-            <div class="glass-effect rounded-2xl p-8 mb-8 shadow-2xl">
-                <h2 class="text-2xl font-semibold text-white mb-6 text-center">
-                    <i class="fas fa-microphone mr-2"></i>
-                    Record Audio
-                </h2>
-                
-                <!-- Recording Controls -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
-                    <button id="startBtn" class="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
-                        <i class="fas fa-play mr-2"></i>Start Recording
-                    </button>
-                    
-                    <button id="stopBtn" class="bg-gray-400 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg cursor-not-allowed" disabled>
-                        <i class="fas fa-stop mr-2"></i>Stop Recording
-                    </button>
-                </div>
-
-                <!-- Status Display -->
-                <div class="text-center mb-6">
-                    <p id="status" class="text-gray-600">Click "Start Recording" to begin</p>
-                </div>
-
-                <!-- Download Section -->
-                <div id="downloadSection" class="hidden bg-white/10 rounded-xl p-6 mb-6">
-                    <h3 class="text-lg font-semibold text-white mb-4">
-                        <i class="fas fa-download mr-2"></i>
-                        Recording Saved
-                    </h3>
-                    <div id="fileInfo" class="text-white/90"></div>
-                </div>
-
-                <!-- Transcription Button -->
-                <div class="text-center mb-6">
-                    <button id="transcribeBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg" disabled>
-                        <i class="fas fa-file-text mr-2"></i>Transcribe to Text
-                    </button>
-                </div>
-            </div>
-
-            <!-- File Upload Section -->
-            <div class="glass-effect rounded-2xl p-8 mb-8 shadow-2xl">
-                <h2 class="text-2xl font-semibold text-white mb-6 text-center">
-                    <i class="fas fa-upload mr-2"></i>
-                    Upload Audio File
-                </h2>
-                
-                <!-- Upload Area -->
-                <div id="uploadArea" class="border-2 border-dashed border-white/30 rounded-xl p-8 text-center cursor-pointer hover:border-white/50 transition-colors duration-200 mb-6">
-                    <i class="fas fa-cloud-upload-alt text-4xl text-white/60 mb-4"></i>
-                    <p class="text-white/80 text-lg mb-2">Drag & drop an audio file here</p>
-                    <p class="text-white/60 text-sm">or click to browse</p>
-                    <input type="file" id="fileInput" accept="audio/*" class="hidden">
-                </div>
-
-                <!-- File Preview -->
-                <div id="filePreview" class="hidden bg-white/10 rounded-xl p-4 mb-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-white font-medium" id="fileName"></p>
-                            <p class="text-white/60 text-sm" id="fileSize"></p>
-                        </div>
-                        <button id="transcribeUploadBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-file-text mr-2"></i>Transcribe File
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Transcription Results -->
-            <div id="transcriptionSection" class="glass-effect rounded-2xl p-8 shadow-2xl hidden">
-                <h2 class="text-2xl font-semibold text-white mb-6 text-center">
-                    <i class="fas fa-file-text mr-2"></i>
-                    Transcription Results
-                </h2>
-                
-                <div class="bg-white/10 rounded-xl p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-white">Transcribed Text</h3>
-                        <button id="copyBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
-                            <i class="fas fa-copy mr-1"></i>Copy
-                        </button>
-                    </div>
-                    <div id="transcriptionResult" class="text-white/90 leading-relaxed whitespace-pre-wrap min-h-[100px] p-4 bg-black/20 rounded-lg"></div>
-                </div>
+        <!-- Download/Transcription Section -->
+        <div id="downloadSection" class="section hidden">
+            <h2>
+                💾 Recording Saved!
+            </h2>
+            <div id="fileInfo" class="mb-6 text-center"></div>
+            <div class="text-center">
+                <button id="transcribeBtn" class="btn btn-info" disabled>
+                    <i class="fas fa-file-alt mr-2"></i>Transcribe to Text
+                </button>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="text-center mt-12">
-            <p class="text-white/60">
-                Powered by OpenAI Whisper API • Built with ❤️
-            </p>
+        <!-- File Upload Section -->
+        <div class="section">
+            <h2>
+                📁 Upload Audio File
+            </h2>
+            <div id="uploadArea" class="drop-area">
+                <i class="fas fa-cloud-upload-alt text-5xl opacity-70 mb-4"></i>
+                <p class="text-lg font-medium">Drag & drop your audio file here</p>
+                <p class="text-sm opacity-70 mt-2">or click to browse (MP3, WAV, M4A, OGG - Max 25MB)</p>
+                <input type="file" id="fileInput" accept="audio/*" class="hidden">
+            </div>
+            <div id="filePreview" class="file-preview flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-file-audio text-3xl mr-3 opacity-70"></i>
+                    <div>
+                        <p id="fileName" class="font-medium"></p>
+                        <p id="fileSize" class="text-sm opacity-70"></p>
+                    </div>
+                </div>
+                <button id="transcribeUploadBtn" class="btn btn-info">
+                    <i class="fas fa-file-alt mr-2"></i>Transcribe File
+                </button>
+            </div>
+        </div>
+
+        <!-- Transcription Results -->
+        <div id="transcriptionSection" class="section hidden">
+            <h2>
+                📝 Transcription Results
+            </h2>
+            <div style="position: relative;">
+                <div id="transcriptionResult" class="transcription-result">
+                    No transcription available.
+                </div>
+                <button id="copyBtn" class="copy-btn btn">
+                    <i class="fas fa-copy mr-1"></i>Copy
+                </button>
+            </div>
         </div>
     </div>
 
