@@ -23,6 +23,11 @@ const storage = multer.diskStorage({
     cb(null, './mic-to-text/recordings/');
   },
   filename: function (req, file, cb) {
+    // If an original filename exists (uploads), preserve it; otherwise create a recording filename
+    if (file && typeof file.originalname === 'string' && file.originalname.trim().length > 0) {
+      cb(null, file.originalname);
+      return;
+    }
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     cb(null, `recording-${timestamp}.mp3`);
   }
@@ -138,130 +143,84 @@ app.get('/script.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'mic-to-text/src/script.js'));
 });
 
+// Logout route - clear auth cookie and return to OAuth landing
+app.get('/logout', (req, res) => {
+  try {
+    res.clearCookie('oauth_code');
+  } catch (_) {}
+  res.redirect('/');
+});
+
 // Root route - redirect to OAuth login
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>LoomSpeak - Voice to Work</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Domine:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <style>
-            :root {
-                --warm-cream: #faf8f5;
-                --soft-beige: #f5f1eb;
-                --warm-gray: #8b7355;
-                --sage-green: #9caf88;
-                --deep-brown: #5d4e37;
-                --warm-white: #fefcf9;
-                --muted-blue: #6b7280;
-                --muted-blue-light: #f3f4f6;
-            }
-            
-            body {
-                background: var(--warm-cream);
-                font-family: 'Domine', serif;
-                color: var(--deep-brown);
-                line-height: 1.7;
-                margin: 0;
-                padding: 30px;
-                font-weight: 400;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .container {
-                max-width: 600px;
-                margin: 0 auto;
-                background: var(--warm-white);
-                border: 1px solid var(--sage-green);
-                border-radius: 12px;
-                padding: 50px;
-                box-shadow: 0 4px 16px rgba(93, 78, 55, 0.08);
-                text-align: center;
-            }
-            
-            h1 {
-                font-size: 2.6em;
-                margin-bottom: 20px;
-                color: var(--deep-brown);
-                font-weight: 500;
-            }
-            
-            h1::before {
-                content: '';
-                display: block;
-                width: 60px;
-                height: 2px;
-                background: var(--muted-blue);
-                margin: 0 auto 20px;
-                border-radius: 1px;
-            }
-            
-            p {
-                font-size: 1.1em;
-                margin-bottom: 30px;
-                color: var(--warm-gray);
-            }
-            
-            .login-btn {
-                display: inline-block;
-                padding: 15px 30px;
-                background: var(--muted-blue);
-                color: var(--warm-white);
-                text-decoration: none;
-                border-radius: 8px;
-                font-size: 1.1em;
-                font-weight: 500;
-                transition: all 0.2s ease;
-                border: none;
-                cursor: pointer;
-            }
-            
-            .login-btn:hover {
-                background: var(--deep-brown);
-                transform: translateY(-1px);
-            }
-            
-            .features {
-                margin-top: 40px;
-                text-align: left;
-            }
-            
-            .feature {
-                display: flex;
-                align-items: center;
-                margin-bottom: 15px;
-                font-size: 1em;
-            }
-            
-            .feature::before {
-                content: '🎤';
-                margin-right: 10px;
-                font-size: 1.2em;
-            }
-        </style>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>LoomSpeak - Voice to Work</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <style>
+        /* Subtle white background with blue-toned grid */
+        .bg-grid {
+          background-image: linear-gradient(to right, rgba(0,82,204,.06) 1px, transparent 1px),
+                            linear-gradient(to bottom, rgba(0,82,204,.06) 1px, transparent 1px);
+          background-size: 22px 22px;
+        }
+        /* Soft blue radial accents that keep background white */
+        .radial-fade {
+          background:
+            radial-gradient(700px 320px at 85% -10%, rgba(0,82,204,0.10), transparent 60%),
+            radial-gradient(600px 280px at 15% 110%, rgba(14,165,233,0.08), transparent 60%),
+            radial-gradient(500px 240px at 50% -5%, rgba(2,132,199,0.06), transparent 60%);
+        }
+      </style>
     </head>
-    <body>
-        <div class="container">
-            <h1>LoomSpeak</h1>
-            <p>Transform your voice into actionable work items with AI-powered transcription and Atlassian integration.</p>
-            
-            <a href="/oauth/login" class="login-btn">Connect with Atlassian</a>
-            
-            <div class="features">
-                <div class="feature">Record and transcribe voice notes</div>
-                <div class="feature">Create Jira issues from transcriptions</div>
-                <div class="feature">Generate Confluence pages</div>
-                <div class="feature">Seamless Atlassian workspace integration</div>
+    <body class="min-h-screen bg-white text-slate-800 bg-grid radial-fade">
+      <div class="max-w-5xl mx-auto px-6 py-14">
+        <!-- Hero header -->
+        <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="absolute inset-0 pointer-events-none" aria-hidden="true" style="background:
+              radial-gradient(800px 350px at 20% -10%, rgba(0,82,204,0.10), transparent 60%),
+              radial-gradient(700px 300px at 100% 120%, rgba(14,165,233,0.10), transparent 60%)"></div>
+          <div class="relative px-10 py-16 text-center">
+            <div class="text-6xl md:text-7xl font-extrabold tracking-tight text-[#0052CC] select-none">LoomSpeak</div>
+            <p class="mt-5 text-slate-600 max-w-2xl mx-auto text-lg md:text-xl">Transform your voice into actionable work with AI-powered transcription and seamless Atlassian integration.</p>
+            <div class="mt-9">
+              <a href="/oauth/login" class="inline-flex items-center gap-2 rounded-lg bg-[#0052CC] px-7 py-3.5 text-white text-lg font-semibold shadow hover:bg-[#0747A6] transition">
+                Connect with Atlassian
+              </a>
             </div>
+          </div>
         </div>
+
+        <!-- Feature grid -->
+        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="rounded-lg border border-slate-200 p-4">
+                <div class="text-slate-900 font-medium">Record and transcribe voice notes</div>
+                <div class="text-slate-500 text-sm mt-1">High-quality, cost-effective transcription</div>
+                <div class="mt-3 h-1 w-16 bg-[#0052CC]/70 rounded"></div>
+              </div>
+              <div class="rounded-lg border border-slate-200 p-4">
+                <div class="text-slate-900 font-medium">Create Jira issues</div>
+                <div class="text-slate-500 text-sm mt-1">Turn actions into tickets in seconds</div>
+                <div class="mt-3 h-1 w-16 bg-sky-500/70 rounded"></div>
+              </div>
+              <div class="rounded-lg border border-slate-200 p-4">
+                <div class="text-slate-900 font-medium">Generate Confluence pages</div>
+                <div class="text-slate-500 text-sm mt-1">Summaries, notes, and more</div>
+                <div class="mt-3 h-1 w-16 bg-cyan-500/70 rounded"></div>
+              </div>
+              <div class="rounded-lg border border-slate-200 p-4">
+                <div class="text-slate-900 font-medium">Seamless workspace integration</div>
+                <div class="text-slate-500 text-sm mt-1">Use across your Atlassian tools</div>
+                <div class="mt-3 h-1 w-16 bg-blue-400/70 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </body>
     </html>
   `);
@@ -273,7 +232,7 @@ app.post('/save-mp3', upload.single('audio'), (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
   
-  console.log(`MP3 file saved: ${req.file.filename}`);
+  console.log(`File saved: ${req.file.filename}`);
   res.json({ 
     success: true, 
     filename: req.file.filename,
