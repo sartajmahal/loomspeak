@@ -1,66 +1,36 @@
 {
-  "input": "It's been a long day bro, TSPMO. So first, I just learned I gotta reschedule my meeting with Yonda and Sid, move it from Tuesday to Thursday from 6 to 7. Also bro, this Sartaj guy, we beefing now. So gotta delete that document with all our favorite memories, but keep the feat pics in it and move that into a new page. Actually no, update the page I have of secret photos and put the feat pics in there. And then, yeah.",
+  "input": "Yo, can you change the confluence page to be titled Yandun Sid instead of Peter Fox? Thank you.",
   "actions": [
     {
-      "action": "update_issue",
-      "title": "Reschedule meeting with Yonda and Sid",
-      "target": "jira",
-      "data": {
-        "dueDate": "Thursday from 6 to 7"
-      }
-    },
-    {
-      "action": "delete_page",
-      "target": "confluence",
-      "identifier": {
-        "pageTitle": "Favorite memories with Sartaj"
-      }
-    },
-    {
       "action": "update_page",
-      "title": "Add feat pics to secret photos page",
+      "title": "Rename Confluence page",
       "target": "confluence",
       "identifier": {
-        "pageTitle": "Secret photos"
+        "pageTitle": "Peter Fox"
       },
       "data": {
-        "body": "Add feat pics"
+        "summary": "Yandun Sid"
       }
     }
   ],
   "raw": {
     "actions": [
       {
-        "action": "update_issue",
-        "target": "jira",
-        "title": "Reschedule meeting with Yonda and Sid",
-        "data": {
-          "dueDate": "Thursday from 6 to 7"
-        }
-      },
-      {
-        "action": "delete_page",
-        "target": "confluence",
-        "identifier": {
-          "pageTitle": "Favorite memories with Sartaj"
-        }
-      },
-      {
         "action": "update_page",
+        "title": "Rename Confluence page",
         "target": "confluence",
-        "title": "Add feat pics to secret photos page",
         "identifier": {
-          "pageTitle": "Secret photos"
+          "pageTitle": "Peter Fox"
         },
         "data": {
-          "body": "Add feat pics"
+          "summary": "Yandun Sid"
         }
       }
     ]
   },
   "metadata": {
-    "inputLength": 419,
-    "actionsFound": 3,
-    "timestamp": "2025-10-19T20:17:54.856Z"
+    "inputLength": 95,
+    "actionsFound": 1,
+    "timestamp": "2025-10-19T20:20:12.566Z"
   }
 }

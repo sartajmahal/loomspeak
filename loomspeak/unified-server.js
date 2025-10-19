@@ -371,6 +371,85 @@ app.delete('/recordings/:filename', (req, res) => {
   }
 });
 
+// Atlassian API endpoints
+app.post('/api/create-jira-issue', async (req, res) => {
+  try {
+    const { title, description, projectKey = 'ENG' } = req.body;
+    const token = process.env.ATLASSIAN_TOKEN;
+    const cloudId = process.env.ATLASSIAN_CLOUD_ID;
+    
+    if (!token || !cloudId) {
+      return res.status(500).json({ error: 'Atlassian configuration missing' });
+    }
+
+    const response = await axios.post(`https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/issue`, {
+      fields: {
+        project: { key: projectKey },
+        summary: title,
+        description: {
+          type: 'doc',
+          version: 1,
+          content: [{
+            type: 'paragraph',
+            content: [{
+              type: 'text',
+              text: description || ''
+            }]
+          }]
+        },
+        issuetype: { name: 'Task' }
+      }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ success: true, data: response.data });
+  } catch (error) {
+    console.error('Jira creation error:', error.response?.data || error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.response?.data?.message || error.message 
+    });
+  }
+});
+
+app.post('/api/create-confluence-page', async (req, res) => {
+  try {
+    const { title, content, spaceId = 'DOC' } = req.body;
+    const token = process.env.ATLASSIAN_TOKEN;
+    const cloudId = process.env.ATLASSIAN_CLOUD_ID;
+    
+    if (!token || !cloudId) {
+      return res.status(500).json({ error: 'Atlassian configuration missing' });
+    }
+
+    const response = await axios.post(`https://api.atlassian.com/ex/confluence/${cloudId}/wiki/api/v2/pages`, {
+      spaceId: spaceId,
+      title: title,
+      body: {
+        representation: 'storage',
+        value: `<h2>${title}</h2><p>${content || ''}</p>`
+      }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ success: true, data: response.data });
+  } catch (error) {
+    console.error('Confluence creation error:', error.response?.data || error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.response?.data?.message || error.message 
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
@@ -379,7 +458,8 @@ app.get('/health', (req, res) => {
     services: {
       oauth: 'available',
       transcription: 'available',
-      recordings: 'available'
+      recordings: 'available',
+      atlassian: 'available'
     }
   });
 });
