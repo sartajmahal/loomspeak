@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoomSpeak - Mic to Text</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .glass-effect { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">
+                <i class="fas fa-microphone mr-4"></i>
+                LoomSpeak
+            </h1>
+            <p class="text-xl text-white/80 max-w-2xl mx-auto">
+                Record audio from your microphone and convert it to text using AI transcription
+            </p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-4xl mx-auto">
+            <!-- Recording Section -->
+            <div class="glass-effect rounded-2xl p-8 mb-8 shadow-2xl">
+                <h2 class="text-2xl font-semibold text-white mb-6 text-center">
+                    <i class="fas fa-microphone mr-2"></i>
+                    Record Audio
+                </h2>
+                
+                <!-- Recording Controls -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
+                    <button id="startBtn" class="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-play mr-2"></i>Start Recording
+                    </button>
+                    
+                    <button id="stopBtn" class="bg-gray-400 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg cursor-not-allowed" disabled>
+                        <i class="fas fa-stop mr-2"></i>Stop Recording
+                    </button>
+                </div>
+
+                <!-- Status Display -->
+                <div class="text-center mb-6">
+                    <p id="status" class="text-gray-600">Click "Start Recording" to begin</p>
+                </div>
+
+                <!-- Download Section -->
+                <div id="downloadSection" class="hidden bg-white/10 rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-download mr-2"></i>
+                        Recording Saved
+                    </h3>
+                    <div id="fileInfo" class="text-white/90"></div>
+                </div>
+
+                <!-- Transcription Button -->
+                <div class="text-center mb-6">
+                    <button id="transcribeBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg" disabled>
+                        <i class="fas fa-file-text mr-2"></i>Transcribe to Text
+                    </button>
+                </div>
+            </div>
+
+            <!-- File Upload Section -->
+            <div class="glass-effect rounded-2xl p-8 mb-8 shadow-2xl">
+                <h2 class="text-2xl font-semibold text-white mb-6 text-center">
+                    <i class="fas fa-upload mr-2"></i>
+                    Upload Audio File
+                </h2>
+                
+                <!-- Upload Area -->
+                <div id="uploadArea" class="border-2 border-dashed border-white/30 rounded-xl p-8 text-center cursor-pointer hover:border-white/50 transition-colors duration-200 mb-6">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-white/60 mb-4"></i>
+                    <p class="text-white/80 text-lg mb-2">Drag & drop an audio file here</p>
+                    <p class="text-white/60 text-sm">or click to browse</p>
+                    <input type="file" id="fileInput" accept="audio/*" class="hidden">
+                </div>
+
+                <!-- File Preview -->
+                <div id="filePreview" class="hidden bg-white/10 rounded-xl p-4 mb-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white font-medium" id="fileName"></p>
+                            <p class="text-white/60 text-sm" id="fileSize"></p>
+                        </div>
+                        <button id="transcribeUploadBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-file-text mr-2"></i>Transcribe File
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transcription Results -->
+            <div id="transcriptionSection" class="glass-effect rounded-2xl p-8 shadow-2xl hidden">
+                <h2 class="text-2xl font-semibold text-white mb-6 text-center">
+                    <i class="fas fa-file-text mr-2"></i>
+                    Transcription Results
+                </h2>
+                
+                <div class="bg-white/10 rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-white">Transcribed Text</h3>
+                        <button id="copyBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                            <i class="fas fa-copy mr-1"></i>Copy
+                        </button>
+                    </div>
+                    <div id="transcriptionResult" class="text-white/90 leading-relaxed whitespace-pre-wrap min-h-[100px] p-4 bg-black/20 rounded-lg"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12">
+            <p class="text-white/60">
+                Powered by OpenAI Whisper API • Built with ❤️
+            </p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
