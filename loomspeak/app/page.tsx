@@ -2,9 +2,9 @@
 
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useState } from 'react';
-import AudioHandler from '@/src/components/AudioHandler';
-import { processWithGemini } from '@/utils/gemini';
-import { executeAtlassianActions } from '@/utils/atlassian';
+import AudioHandler from '../src/components/AudioHandler';
+import { processWithGemini } from '../utils/gemini';
+import { executeAtlassianActions } from '../utils/atlassian';
 
 export default function Home() {
   const { data: session } = useSession();

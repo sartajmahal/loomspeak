@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { transcribeAudio } from '@/utils/whisper';
+// Removed whisper import; using Gemini for transcription
 
 interface AudioHandlerProps {
   onTranscriptionComplete: (text: string) => void;
