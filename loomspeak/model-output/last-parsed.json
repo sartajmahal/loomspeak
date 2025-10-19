@@ -1,0 +1,30 @@
+{
+  "input": "6700.6700 or 6 7 6 7 into a confluence page please",
+  "actions": [
+    {
+      "action": "create_page",
+      "title": "New Page with Provided Content",
+      "target": "confluence",
+      "data": {
+        "body": "6700.6700 or 6 7 6 7"
+      }
+    }
+  ],
+  "raw": {
+    "actions": [
+      {
+        "action": "create_page",
+        "title": "New Page with Provided Content",
+        "target": "confluence",
+        "data": {
+          "body": "6700.6700 or 6 7 6 7"
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "inputLength": 50,
+    "actionsFound": 1,
+    "timestamp": "2025-10-19T18:29:22.475Z"
+  }
+}
